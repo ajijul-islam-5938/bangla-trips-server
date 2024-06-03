@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
@@ -9,7 +9,6 @@ const port = process.env.PORT || 3000;
 // midleware
 app.use(cors());
 app.use(express.json());
-console.log(process.env.DB_PASSWORD);
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.wugjgdu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -43,10 +42,15 @@ async function run() {
       if (exist) {
         return res.send({ exist: true });
       }
-      console.log(exist);
       const result = await userCollection.insertOne(userInfo);
       res.send({ exist: false });
     });
+
+    // get all user
+    app.get("/users" ,async(req,res)=>{
+        const result = await userCollection.find().toArray();
+        res.send(result)
+    })
 
 
     // check is Admin
