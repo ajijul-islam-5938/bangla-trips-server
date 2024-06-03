@@ -7,7 +7,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // midleware
-app.use(cors());
+app.use(cors({
+    origin : ["https://assignment-12-819b8.web.app","http://localhost:5173"]
+}));
 app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.wugjgdu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -27,10 +29,10 @@ const userCollection = database.collection("userDB");
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // test API
-    app.get("/", (req, res) => {
+    app.get("/", async(req, res) => {
       res.send("Server Connected Successfully");
     });
 
@@ -74,6 +76,21 @@ async function run() {
         const updatedDoc = {
             $set : {
                 role : "admin"
+            }
+        }
+        const result = await userCollection.updateOne(filter,updatedDoc);
+        res.send(result)
+    })
+
+
+    // api for make admin
+
+    app.patch("/user/guide/:id", async(req,res)=>{
+        const id = req.params.id;
+        const filter ={_id : new ObjectId(id)};
+        const updatedDoc = {
+            $set : {
+                role : "guide"
             }
         }
         const result = await userCollection.updateOne(filter,updatedDoc);
