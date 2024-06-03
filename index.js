@@ -25,6 +25,7 @@ const client = new MongoClient(uri, {
 // database and collection
 const database = client.db("touristDB");
 const userCollection = database.collection("userDB");
+const packagesCollection = database.collection("tourPackages");
 
 async function run() {
   try {
@@ -83,7 +84,7 @@ async function run() {
     })
 
 
-    // api for make admin
+    // api for make guide
 
     app.patch("/user/guide/:id", async(req,res)=>{
         const id = req.params.id;
@@ -96,6 +97,16 @@ async function run() {
         const result = await userCollection.updateOne(filter,updatedDoc);
         res.send(result)
     })
+
+
+
+    // Api for get all packages
+    app.get("/packages",async(req,res)=>{
+        const result = await packagesCollection.find().toArray();
+        res.send(result)
+    })
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
