@@ -29,6 +29,7 @@ const database = client.db("touristDB");
 const userCollection = database.collection("userDB");
 const packagesCollection = database.collection("tourPackages");
 const bookingCollection = database.collection("bookingDB");
+const wishCollection = database.collection("wishListCollection");
 
 async function run() {
   try {
@@ -100,15 +101,40 @@ async function run() {
     });
 
 
-    // add package api 
+    // api for accept booking
+    app.patch("/booking/accept/:id", async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            status: "accepted",
+          },
+        };
+        const result = await bookingCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      });
 
 
-    app.post("/package",async(req,res)=>{
-        const data = req.body;
-        const result = await packagesCollection.insertOne(data);
-        res.send(result)
-    })
+    //   api for reject booking
+    app.patch("/booking/reject/:id", async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            status: "rejected",
+          },
+        };
+        const result = await bookingCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      });
 
+    // add package api
+
+    app.post("/package", async (req, res) => {
+      const data = req.body;
+      const result = await packagesCollection.insertOne(data);
+      res.send(result);
+    });
 
     // Api for get all packages
     app.get("/packages", async (req, res) => {
@@ -122,59 +148,71 @@ async function run() {
       res.send(result);
     });
 
-
     // api for getting specific package
-    app.get("/package/:id",async(req,res)=>{
-        const id = req.params.id;
-        const query = {_id : new ObjectId(id)}
-        const result = await packagesCollection.findOne(query);
-        res.send(result);
-    })
+    app.get("/package/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await packagesCollection.findOne(query);
+      res.send(result);
+    });
 
     // api for loading guides
-    app.get('/guides',async(req,res)=>{
-        const query = {role : "guide"}      
-        const result = await userCollection.find(query).toArray();
-        res.send(result)                            
-    })
+    app.get("/guides", async (req, res) => {
+      const query = { role: "guide" };
+      const result = await userCollection.find(query).toArray();
+      res.send(result);
+    });
 
-    // api for loading specific guide 
-    app.get("/guide/:id",async(req,res)=>{
-        const id = req.params.id;
-        const query = {_id : new ObjectId(id)}
-        const result = await userCollection.findOne(query);
-        res.send(result)
-    })
-
-
-
-
-
+    // api for loading specific guide
+    app.get("/guide/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
 
     // api for booking packages
-    app.post("/booking",async(req,res)=>{
-        const data = req.body;
-        const result = await bookingCollection.insertOne(data);
-        res.send(result)
-    })
-
+    app.post("/booking", async (req, res) => {
+      const data = req.body;
+      const result = await bookingCollection.insertOne(data);
+      res.send(result);
+    });
 
     // Api for get my bookings
-    app.get("/my-bookings",async(req,res)=>{
-        const email = req.query.email;
-        const query = {email : email}
-        const result = await bookingCollection.find(query).toArray();
-        res.send(result)
-    })
-
-
-
+    app.get("/my-bookings", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // api for delete my booking
-    app.delete("/my-booking/delete/:id",async(req,res)=>{
-        const id = req.params.id;
-        const query = {_id : new ObjectId(id)};
-        const result = await bookingCollection.deleteOne(query);
+    app.delete("/my-booking/delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // api for creating wishList
+    app.post("/wish-list", async (req, res) => {
+      const data = req.body;
+      const result = await wishCollection.insertOne(data);
+      res.send(result);
+    });
+
+    //api for get all wishlist
+    app.get("/wish-lists", async (req, res) => {
+        
+    });
+
+
+
+    // api for get my asiigned tours
+    app.get("/assigned-tours",async(req,res)=>{
+        const email = req.query.email;
+        const query ={ guideEmail : email }
+        const result = await bookingCollection.find(query).toArray()
         res.send(result)
     })
 
