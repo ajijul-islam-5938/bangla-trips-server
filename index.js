@@ -98,6 +98,17 @@ async function run() {
       res.send(result);
     });
 
+
+    // add package api 
+
+
+    app.post("/package",async(req,res)=>{
+        const data = req.body;
+        const result = await packagesCollection.insertOne(data);
+        res.send(result)
+    })
+
+
     // Api for get all packages
     app.get("/packages", async (req, res) => {
       const result = await packagesCollection.find().toArray();
@@ -111,12 +122,27 @@ async function run() {
     });
 
 
-    // api for getting 1 package
+    // api for getting specific package
     app.get("/package/:id",async(req,res)=>{
         const id = req.params.id;
         const query = {_id : new ObjectId(id)}
         const result = await packagesCollection.findOne(query);
         res.send(result);
+    })
+
+    // api for loading guides
+    app.get('/guides',async(req,res)=>{
+        const query = {role : "guide"}      
+        const result = await userCollection.find(query).toArray();
+        res.send(result)                            
+    })
+
+    // api for loading specific guide 
+    app.get("/guide/:id",async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id : new ObjectId(id)}
+        const result = await userCollection.findOne(query);
+        res.send(result)
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
