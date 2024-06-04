@@ -28,6 +28,7 @@ const client = new MongoClient(uri, {
 const database = client.db("touristDB");
 const userCollection = database.collection("userDB");
 const packagesCollection = database.collection("tourPackages");
+const bookingCollection = database.collection("bookingDB");
 
 async function run() {
   try {
@@ -144,6 +145,40 @@ async function run() {
         const result = await userCollection.findOne(query);
         res.send(result)
     })
+
+
+
+
+
+
+    // api for booking packages
+    app.post("/booking",async(req,res)=>{
+        const data = req.body;
+        const result = await bookingCollection.insertOne(data);
+        res.send(result)
+    })
+
+
+    // Api for get my bookings
+    app.get("/my-bookings",async(req,res)=>{
+        const email = req.query.email;
+        const query = {email : email}
+        const result = await bookingCollection.find(query).toArray();
+        res.send(result)
+    })
+
+
+
+
+    // api for delete my booking
+    app.delete("/my-booking/delete/:id",async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id : new ObjectId(id)};
+        const result = await bookingCollection.deleteOne(query);
+        res.send(result)
+    })
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
