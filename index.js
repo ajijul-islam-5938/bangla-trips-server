@@ -7,9 +7,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // midleware
-app.use(cors({
-    origin : ["https://assignment-12-819b8.web.app","http://localhost:5173"]
-}));
+app.use(
+  cors({
+    origin: ["https://assignment-12-819b8.web.app", "http://localhost:5173"],
+  })
+);
 app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.wugjgdu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -33,7 +35,7 @@ async function run() {
     // await client.connect();
 
     // test API
-    app.get("/", async(req, res) => {
+    app.get("/", async (req, res) => {
       res.send("Server Connected Successfully");
     });
 
@@ -50,63 +52,72 @@ async function run() {
     });
 
     // get all user
-    app.get("/users" ,async(req,res)=>{
-        const result = await userCollection.find().toArray();
-        res.send(result)
-    })
-
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     // check is Admin
-    app.get("/user/admin/:email" , async (req,res)=>{
-        const email = req.params.email;
-        const query = {email : email};
+    app.get("/user/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
 
-        let admin = false;
-        const user = await userCollection.findOne(query)
-        if(user){
-            admin = user?.role === "admin"
-        }
-        res.send({admin})
-    })
+      let admin = false;
+      const user = await userCollection.findOne(query);
+      if (user) {
+        admin = user?.role === "admin";
+      }
+      res.send({ admin });
+    });
 
     // api for make admin
 
-    app.patch("/user/admin/:id", async(req,res)=>{
-        const id = req.params.id;
-        const filter ={_id : new ObjectId(id)};
-        const updatedDoc = {
-            $set : {
-                role : "admin"
-            }
-        }
-        const result = await userCollection.updateOne(filter,updatedDoc);
-        res.send(result)
-    })
-
+    app.patch("/user/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     // api for make guide
 
-    app.patch("/user/guide/:id", async(req,res)=>{
-        const id = req.params.id;
-        const filter ={_id : new ObjectId(id)};
-        const updatedDoc = {
-            $set : {
-                role : "guide"
-            }
-        }
-        const result = await userCollection.updateOne(filter,updatedDoc);
-        res.send(result)
-    })
-
-
+    app.patch("/user/guide/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          role: "guide",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     // Api for get all packages
-    app.get("/packages",async(req,res)=>{
-        const result = await packagesCollection.find().toArray();
-        res.send(result)
+    app.get("/packages", async (req, res) => {
+      const result = await packagesCollection.find().toArray();
+      res.send(result);
+    });
+
+    // api for get last 3 packages
+    app.get("/packages/last", async (req, res) => {
+      const result = await packagesCollection.find().limit(3).toArray();
+      res.send(result);
+    });
+
+
+    // api for getting 1 package
+    app.get("/package/:id",async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id : new ObjectId(id)}
+        const result = await packagesCollection.findOne(query);
+        res.send(result);
     })
-
-
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
