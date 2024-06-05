@@ -30,6 +30,7 @@ const userCollection = database.collection("userDB");
 const packagesCollection = database.collection("tourPackages");
 const bookingCollection = database.collection("bookingDB");
 const wishCollection = database.collection("wishListCollection");
+const storyCollection = database.collection("storyCollection");
 
 async function run() {
   try {
@@ -169,6 +170,18 @@ async function run() {
       res.send(result);
     });
 
+
+
+    // api for get packages based on tourType
+    app.get("/packages/tour-type/:type",async(req,res)=>{
+        const type = req.params.type;
+        const query = {tourType : type};
+        const result = await packagesCollection.find(query).toArray();
+        res.send(result)
+    })
+
+
+
     // api for loading guides
     app.get("/guides", async (req, res) => {
       const query = { role: "guide" };
@@ -236,6 +249,39 @@ async function run() {
         const result = await bookingCollection.find(query).toArray()
         res.send(result)
     })
+
+
+    // api for adding Story
+    app.post("/story",async(req,res)=>{
+        const data = req.body;
+        const result = await storyCollection.insertOne(data);
+        res.send(result)
+    })
+
+    // api for geetting stories
+    app.get("/stories",async(req,res)=>{
+        const result = await storyCollection.find().toArray();
+        res.send(result)
+    })
+
+    // api for geetting stories last 3
+    app.get("/stories/last",async(req,res)=>{
+        const result = await storyCollection.find().limit(3).toArray();
+        res.send(result)
+    })
+
+
+    // api for geetting specific story
+    app.get("/story/:id",async(req,res)=>{
+        const id = req.params.id;
+        const query = {_id : new ObjectId(id)};
+        const result = await storyCollection.findOne();
+        res.send(result)
+    })
+
+
+
+
 
 
     // Send a ping to confirm a successful connection
