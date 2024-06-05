@@ -86,6 +86,19 @@ async function run() {
       res.send(result);
     });
 
+    // api for request guide 
+    app.patch("/user/request/guide", async (req, res) => {
+      const email = req.query.email;
+      const filter = { email: email };
+      const updatedDoc = {
+        $set: {
+          role: "requested",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
     // api for make guide
 
     app.patch("/user/guide/:id", async (req, res) => {
