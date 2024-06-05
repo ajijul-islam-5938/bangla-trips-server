@@ -203,10 +203,18 @@ async function run() {
 
     //api for get all wishlist
     app.get("/wish-lists", async (req, res) => {
-        
+        const email = req.query.email;
+        const query = {wishEmail : email};
+        const result = await wishCollection.find(query).toArray();
+        res.send(result)
     });
 
-
+    app.delete("/wish-list/delete/:id", async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await wishCollection.deleteOne(query);
+        res.send(result);
+      });
 
     // api for get my asiigned tours
     app.get("/assigned-tours",async(req,res)=>{
