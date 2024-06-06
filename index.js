@@ -60,6 +60,26 @@ async function run() {
       res.send(result);
     });
 
+
+    // get users by filter
+    app.get("/users/:text",async(req,res)=>{
+      const text = req.params.text;
+      const filter = {name : {$regex : text , $options : "i"}}
+      const result = await userCollection.find(filter).toArray()
+      res.send(result)
+    })
+
+
+    // get users by filter
+    app.get("/users/filter/:text",async(req,res)=>{
+      const text = req.params.text;
+      const filter = {role : text }
+      const result = await userCollection.find(filter).toArray()
+      res.send(result)
+      console.log(text);
+    })
+
+
     // check is Admin
     app.get("/user/admin/:email", async (req, res) => {
       const email = req.params.email;
@@ -266,7 +286,7 @@ async function run() {
 
     // api for geetting stories last 3
     app.get("/stories/last",async(req,res)=>{
-        const result = await storyCollection.find().limit(3).toArray();
+        const result = await storyCollection.find().limit(4).toArray();
         res.send(result)
     })
 
