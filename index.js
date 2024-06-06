@@ -295,7 +295,7 @@ async function run() {
     app.get("/story/:id",async(req,res)=>{
         const id = req.params.id;
         const query = {_id : new ObjectId(id)};
-        const result = await storyCollection.findOne();
+        const result = await storyCollection.findOne(query);
         res.send(result)
     })
 
