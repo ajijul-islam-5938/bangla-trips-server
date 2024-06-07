@@ -31,6 +31,7 @@ const packagesCollection = database.collection("tourPackages");
 const bookingCollection = database.collection("bookingDB");
 const wishCollection = database.collection("wishListCollection");
 const storyCollection = database.collection("storyCollection");
+const commentCollection = database.collection("commentCollection");
 
 async function run() {
   try {
@@ -76,7 +77,7 @@ async function run() {
       const filter = {role : text }
       const result = await userCollection.find(filter).toArray()
       res.send(result)
-      console.log(text);
+      // console.log(text);
     })
 
 
@@ -90,7 +91,33 @@ async function run() {
       if (user) {
         admin = user?.role === "admin";
       }
-      res.send({ admin });
+      res.send(admin)
+    });
+
+    // check is Guide
+    app.get("/user/guide/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+
+      let guide = false;
+      const user = await userCollection.findOne(query);
+      if (user) {
+        guide = user?.role === "guide";
+      }
+      res.send(guide);
+    });
+
+    //check is Requested
+    app.get("/user/role/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+
+      let isRequested = false;
+      const user = await userCollection.findOne(query);
+      if (user) {
+        isRequested = user?.role === "requested";
+      }
+      res.send(isRequested );
     });
 
     // api for make admin
@@ -299,7 +326,20 @@ async function run() {
         res.send(result)
     })
 
+    // api for saving comments
+    app.post("/comment",async(req,res)=>{
+      const comment = req.body;
+      const result = await commentCollection.insertOne(comment);
+      res.send(result)
+    })
 
+    // api for getting comment
+    app.get("/comments",async(req,res)=>{
+      const guideEmail = req.query.email;
+      const query = {guideEmail : guideEmail};
+      const result = await commentCollection.find(query).toArray();
+      res.send(result) 
+    })
 
 
 
