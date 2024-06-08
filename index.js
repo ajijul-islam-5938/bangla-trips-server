@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,6 +16,9 @@ app.use(
 app.use(express.json());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.wugjgdu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
+
+
+
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -23,6 +27,9 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+
+
 
 // database and collection
 const database = client.db("touristDB");
@@ -38,13 +45,43 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
+
+    const verifyToken = (req,res,next)=>{
+      const token = req.headers.token;
+      if(!token){
+        return res.status(403).send("unAuthorized")
+      }
+      jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
+        // console.log(decoded);
+        req.decoded = decoded;
+        if(decoded){
+          if(!req.body.email === decoded.email){
+            return res.ststus(402).send("forbidden access")
+          }
+          next()
+        }
+      })
+      
+    }
+
     // test API
     app.get("/", async (req, res) => {
       res.send("Server Connected Successfully");
     });
 
+    // jwt generate
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send(token);
+    });
+
+    
+
     // save new user to database
-    app.post("/user", async (req, res) => {
+    app.post("/user",verifyToken, async (req, res) => {
       const userInfo = req.body;
       const query = { email: userInfo.email };
       const exist = await userCollection.findOne(query);
@@ -56,33 +93,31 @@ async function run() {
     });
 
     // get all user
-    app.get("/users", async (req, res) => {
+    app.get("/users",verifyToken, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
 
+    // get users by filter
+    app.get("/users/:text",verifyToken, async (req, res) => {
+      const text = req.params.text;
+      const filter = { name: { $regex: text, $options: "i" } };
+      const result = await userCollection.find(filter).toArray();
+      res.send(result);
+    });
 
     // get users by filter
-    app.get("/users/:text",async(req,res)=>{
+    app.get("/users/filter/:text", verifyToken, async (req, res) => {
       const text = req.params.text;
-      const filter = {name : {$regex : text , $options : "i"}}
-      const result = await userCollection.find(filter).toArray()
-      res.send(result)
-    })
-
-
-    // get users by filter
-    app.get("/users/filter/:text",async(req,res)=>{
-      const text = req.params.text;
-      const filter = {role : text }
-      const result = await userCollection.find(filter).toArray()
-      res.send(result)
+      const filter = { role: text };
+      const result = await userCollection.find(filter).toArray();
+      res.send(result);
       // console.log(text);
-    })
-
+    });
 
     // check is Admin
-    app.get("/user/admin/:email", async (req, res) => {
+    app.get("/user/admin/:email", verifyToken ,async (req, res) => {
+      
       const email = req.params.email;
       const query = { email: email };
 
@@ -91,11 +126,11 @@ async function run() {
       if (user) {
         admin = user?.role === "admin";
       }
-      res.send(admin)
+      res.send(admin);
     });
 
     // check is Guide
-    app.get("/user/guide/:email", async (req, res) => {
+    app.get("/user/guide/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
 
@@ -108,7 +143,7 @@ async function run() {
     });
 
     //check is Requested
-    app.get("/user/role/:email", async (req, res) => {
+    app.get("/user/role/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
 
@@ -117,12 +152,12 @@ async function run() {
       if (user) {
         isRequested = user?.role === "requested";
       }
-      res.send(isRequested );
+      res.send(isRequested);
     });
 
     // api for make admin
 
-    app.patch("/user/admin/:id", async (req, res) => {
+    app.patch("/user/admin/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -134,8 +169,8 @@ async function run() {
       res.send(result);
     });
 
-    // api for request guide 
-    app.patch("/user/request/guide", async (req, res) => {
+    // api for request guide
+    app.patch("/user/request/guide",verifyToken, async (req, res) => {
       const email = req.query.email;
       const filter = { email: email };
       const updatedDoc = {
@@ -149,7 +184,7 @@ async function run() {
 
     // api for make guide
 
-    app.patch("/user/guide/:id", async (req, res) => {
+    app.patch("/user/guide/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -161,37 +196,35 @@ async function run() {
       res.send(result);
     });
 
-
     // api for accept booking
-    app.patch("/booking/accept/:id", async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const updatedDoc = {
-          $set: {
-            status: "accepted",
-          },
-        };
-        const result = await bookingCollection.updateOne(filter, updatedDoc);
-        res.send(result);
-      });
-
+    app.patch("/booking/accept/:id",verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: "accepted",
+        },
+      };
+      const result = await bookingCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     //   api for reject booking
-    app.patch("/booking/reject/:id", async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const updatedDoc = {
-          $set: {
-            status: "rejected",
-          },
-        };
-        const result = await bookingCollection.updateOne(filter, updatedDoc);
-        res.send(result);
-      });
+    app.patch("/booking/reject/:id",verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: "rejected",
+        },
+      };
+      const result = await bookingCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
     // add package api
 
-    app.post("/package", async (req, res) => {
+    app.post("/package",verifyToken, async (req, res) => {
       const data = req.body;
       const result = await packagesCollection.insertOne(data);
       res.send(result);
@@ -217,17 +250,13 @@ async function run() {
       res.send(result);
     });
 
-
-
     // api for get packages based on tourType
-    app.get("/packages/tour-type/:type",async(req,res)=>{
-        const type = req.params.type;
-        const query = {tourType : type};
-        const result = await packagesCollection.find(query).toArray();
-        res.send(result)
-    })
-
-
+    app.get("/packages/tour-type/:type", async (req, res) => {
+      const type = req.params.type;
+      const query = { tourType: type };
+      const result = await packagesCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // api for loading guides
     app.get("/guides", async (req, res) => {
@@ -245,14 +274,14 @@ async function run() {
     });
 
     // api for booking packages
-    app.post("/booking", async (req, res) => {
+    app.post("/booking",verifyToken, async (req, res) => {
       const data = req.body;
       const result = await bookingCollection.insertOne(data);
       res.send(result);
     });
 
     // Api for get my bookings
-    app.get("/my-bookings", async (req, res) => {
+    app.get("/my-bookings",verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const result = await bookingCollection.find(query).toArray();
@@ -260,7 +289,7 @@ async function run() {
     });
 
     // api for delete my booking
-    app.delete("/my-booking/delete/:id", async (req, res) => {
+    app.delete("/my-booking/delete/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await bookingCollection.deleteOne(query);
@@ -268,81 +297,76 @@ async function run() {
     });
 
     // api for creating wishList
-    app.post("/wish-list", async (req, res) => {
+    app.post("/wish-list",verifyToken, async (req, res) => {
       const data = req.body;
       const result = await wishCollection.insertOne(data);
       res.send(result);
     });
 
     //api for get all wishlist
-    app.get("/wish-lists", async (req, res) => {
-        const email = req.query.email;
-        const query = {wishEmail : email};
-        const result = await wishCollection.find(query).toArray();
-        res.send(result)
+    app.get("/wish-lists",verifyToken, async (req, res) => {
+      const email = req.query.email;
+      const query = { wishEmail: email };
+      const result = await wishCollection.find(query).toArray();
+      res.send(result);
     });
 
-    app.delete("/wish-list/delete/:id", async (req, res) => {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await wishCollection.deleteOne(query);
-        res.send(result);
-      });
+    app.delete("/wish-list/delete/:id",verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await wishCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // api for get my asiigned tours
-    app.get("/assigned-tours",async(req,res)=>{
-        const email = req.query.email;
-        const query ={ guideEmail : email }
-        const result = await bookingCollection.find(query).toArray()
-        res.send(result)
-    })
-
+    app.get("/assigned-tours",verifyToken, async (req, res) => {
+      const email = req.query.email;
+      const query = { guideEmail: email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // api for adding Story
-    app.post("/story",async(req,res)=>{
-        const data = req.body;
-        const result = await storyCollection.insertOne(data);
-        res.send(result)
-    })
+    app.post("/story",verifyToken, async (req, res) => {
+      const data = req.body;
+      const result = await storyCollection.insertOne(data);
+      res.send(result);
+    });
 
     // api for geetting stories
-    app.get("/stories",async(req,res)=>{
-        const result = await storyCollection.find().toArray();
-        res.send(result)
-    })
+    app.get("/stories", async (req, res) => {
+      const result = await storyCollection.find().toArray();
+      res.send(result);
+    });
 
     // api for geetting stories last 3
-    app.get("/stories/last",async(req,res)=>{
-        const result = await storyCollection.find().limit(4).toArray();
-        res.send(result)
-    })
-
+    app.get("/stories/last", async (req, res) => {
+      const result = await storyCollection.find().limit(4).toArray();
+      res.send(result);
+    });
 
     // api for geetting specific story
-    app.get("/story/:id",async(req,res)=>{
-        const id = req.params.id;
-        const query = {_id : new ObjectId(id)};
-        const result = await storyCollection.findOne(query);
-        res.send(result)
-    })
+    app.get("/story/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await storyCollection.findOne(query);
+      res.send(result);
+    });
 
     // api for saving comments
-    app.post("/comment",async(req,res)=>{
+    app.post("/comment",verifyToken, async (req, res) => {
       const comment = req.body;
       const result = await commentCollection.insertOne(comment);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     // api for getting comment
-    app.get("/comments",async(req,res)=>{
+    app.get("/comments", async (req, res) => {
       const guideEmail = req.query.email;
-      const query = {guideEmail : guideEmail};
+      const query = { guideEmail: guideEmail };
       const result = await commentCollection.find(query).toArray();
-      res.send(result) 
-    })
-
-
-
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
